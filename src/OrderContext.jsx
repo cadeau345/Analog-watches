@@ -20,6 +20,13 @@ export function OrderProvider({ children }) {
   const [orders, setOrders] = useState([]);
   const [cart, setCart] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    setCurrentUser(user);
+  });
+
+  return () => unsubscribe();
+}, []);
 const auth = getAuth();
 
   /* 🔄 Load Products */
@@ -232,6 +239,7 @@ await updateDoc(productRef, {
         createCoupon,
         validateCoupon,
         applyCouponUsage,
+        currentUser,
       }}
     >
       {children}
