@@ -38,6 +38,13 @@ function AdminLogin() {
         await signOut(auth);
         return;
       }
+if (!userDoc.exists() || userDoc.data().role !== "admin") {
+  alert("You are not authorized as admin");
+  return;
+}
+
+localStorage.setItem("isAdmin", "true");
+navigate("/admin");
 
       navigate("/admin");
 

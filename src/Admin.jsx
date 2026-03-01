@@ -18,7 +18,7 @@ function Admin() {
   const { currentUser } = useContext(OrderContext);
 
   // غير الايميل ده بايميلك انت
-  const ADMIN_EMAIL = "moazmahmoud@email.com";
+  const ADMIN_EMAIL = "moazmahmoud@gmail.com";
 
   if (!currentUser) {
     return <Navigate to="/admin-login" />;
