@@ -38,19 +38,14 @@ function AdminLogin() {
         await signOut(auth);
         return;
       }
-if (!userDoc.exists() || userDoc.data().role !== "admin") {
-  alert("You are not authorized as admin");
-  return;
-}
 
-localStorage.setItem("isAdmin", "true");
-navigate("/admin");
-
+      localStorage.setItem("isAdmin", "true");
+      navigate("/admin");
 
     } catch (error) {
-  console.log("Firebase Error:", error);
-  alert(error.message);
-}
+      console.log(error);
+      alert(error.message);
+    }
   };
 
   return (
