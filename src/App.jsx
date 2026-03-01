@@ -11,7 +11,7 @@ import Checkout from "./Checkout";
 import Success from "./Success";
 import Admin from "./Admin";
 import AdminLogin from "./AdminLogin";
-import Men from "./men";
+import Men from "./Men";
 import Women from "./Women";
 import NewArrivals from "./NewArrivals";
 import Cart from "./Cart";
