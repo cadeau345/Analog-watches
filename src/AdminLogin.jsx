@@ -46,7 +46,6 @@ if (!userDoc.exists() || userDoc.data().role !== "admin") {
 localStorage.setItem("isAdmin", "true");
 navigate("/admin");
 
-      navigate("/admin");
 
     } catch (error) {
       console.log(error);
