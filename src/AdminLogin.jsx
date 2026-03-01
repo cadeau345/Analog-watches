@@ -48,9 +48,9 @@ navigate("/admin");
 
 
     } catch (error) {
-      console.log(error);
-      alert("Login Failed");
-    }
+  console.log("Firebase Error:", error);
+  alert(error.message);
+}
   };
 
   return (
