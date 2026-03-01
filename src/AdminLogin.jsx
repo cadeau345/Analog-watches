@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useNavigate } from "react-router-dom";
@@ -22,15 +22,27 @@ function AdminLogin() {
 
       const uid = userCredential.user.uid;
 
-      const userDoc = await getDoc(doc(db, "users", uid));
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
 
-      if (!userDoc.exists() || userDoc.data().role !== "admin") {
+      if (!userSnap.exists()) {
+        alert("User document not found in Firestore");
+        await signOut(auth);
+        return;
+      }
+
+      const userData = userSnap.data();
+
+      if (userData.role !== "admin") {
         alert("You are not authorized as admin");
+        await signOut(auth);
         return;
       }
 
       navigate("/admin");
+
     } catch (error) {
+      console.log(error);
       alert("Login Failed");
     }
   };
