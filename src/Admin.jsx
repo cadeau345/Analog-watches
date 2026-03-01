@@ -14,6 +14,21 @@ import {
 function Admin() {
   const navigate = useNavigate();
 
+  /* 🔐 NEW: Auth Protection */
+  const { currentUser } = useContext(OrderContext);
+
+  // غير الايميل ده بايميلك انت
+  const ADMIN_EMAIL = "moazmahmoud@email.com";
+
+  if (!currentUser) {
+    return <Navigate to="/admin-login" />;
+  }
+
+  if (currentUser.email !== ADMIN_EMAIL) {
+    return <Navigate to="/" />;
+  }
+
+  /* 👇 سيبنا شرط localStorage زي ما هو علشان مفيش حاجة تبوظ */
   if (localStorage.getItem("isAdmin") !== "true") {
     return <Navigate to="/admin-login" />;
   }
@@ -201,7 +216,7 @@ function Admin() {
         ))}
       </div>
 
-      {/* 🎟 Coupon Detailed Usage Section (صح) */}
+      {/* Coupon Detailed Usage */}
       <div className="max-w-7xl mx-auto bg-white p-6 rounded-2xl shadow-lg mt-20">
         <h2 className="text-2xl font-bold mb-6">
           Coupon Detailed Usage

@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { increment } from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export const OrderContext = createContext();
 
@@ -18,16 +19,18 @@ export function OrderProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [cart, setCart] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+const auth = getAuth();
 
   /* 🔄 Load Products */
-  const fetchProducts = async () => {
+  async function fetchProducts() {
     const snapshot = await getDocs(collection(db, "products"));
     const list = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
     setProducts(list);
-  };
+  }
 
   /* ⭐ Add Rating */
   const addRating = async (productId, rating) => {
