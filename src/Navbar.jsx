@@ -51,15 +51,15 @@ function Navbar() {
       </div>
 
       {/* Mobile Dropdown Menu */}
-      {menuOpen && (
-        <div className="md:hidden bg-white shadow-lg px-6 py-4 space-y-4 text-gray-700 font-medium">
-          <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
-          <Link to="/men" onClick={() => setMenuOpen(false)}>Men</Link>
-          <Link to="/women" onClick={() => setMenuOpen(false)}>Women</Link>
-          <Link to="/new" onClick={() => setMenuOpen(false)}>New Arrivals</Link>
-          <Link to="/contact" onClick={() => setMenuOpen(false)}>Contact</Link>
-        </div>
-      )}
+   {open && (
+  <div className="md:hidden bg-white border-t px-6 py-4 flex flex-col gap-4 text-gray-700 font-medium">
+    <Link to="/" onClick={() => setOpen(false)}>Home</Link>
+    <Link to="/men" onClick={() => setOpen(false)}>Men</Link>
+    <Link to="/women" onClick={() => setOpen(false)}>Women</Link>
+    <Link to="/new" onClick={() => setOpen(false)}>New Arrivals</Link>
+    <Link to="/contact" onClick={() => setOpen(false)}>Contact</Link>
+  </div>
+)}
     </nav>
   );
 }
