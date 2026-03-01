@@ -41,7 +41,7 @@ function WhyChooseUs() {
             <div className="text-5xl mb-6">⚡</div>
             <h3 className="text-xl font-semibold mb-3">Fast Shipping</h3>
             <p className="text-gray-600">
-              Delivered within 24–48 hours nationwide.
+              Delivered within 48–72 hours nationwide.
             </p>
           </motion.div>
 
