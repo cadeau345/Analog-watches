@@ -19,7 +19,7 @@ function Navbar() {
           Analog Watches
         </Link>
 
-      <div className="flex flex-col md:flex-row gap-4 md:gap-8 text-gray-600 font-medium">
+      <div className="flex flex-wrap gap-4 text-gray-600 font-medium justify-center">
           <Link to="/">Home</Link>
           <Link to="/men">Men</Link>
           <Link to="/women">Women</Link>
