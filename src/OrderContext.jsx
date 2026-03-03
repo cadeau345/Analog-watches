@@ -40,21 +40,47 @@ const auth = getAuth();
   }
 
   /* ⭐ Add Rating */
-  const addRating = async (productId, rating) => {
-    const productRef = doc(db, "products", productId);
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
+const addRating = async (productId, rating) => {
+  if (!currentUser) {
+    alert("You must login to rate");
+    return;
+  }
 
-    const newTotal = (product.ratingTotal || 0) + rating;
-    const newCount = (product.ratingCount || 0) + 1;
+  const productRef = doc(db, "products", productId);
+  const snapshot = await getDoc(productRef);
 
-    await updateDoc(productRef, {
-      ratingTotal: newTotal,
-      ratingCount: newCount,
+  if (!snapshot.exists()) return;
+
+  const productData = snapshot.data();
+  const ratings = productData.ratings || [];
+
+  const existingIndex = ratings.findIndex(
+    (r) => r.userId === currentUser.uid
+  );
+
+  if (existingIndex !== -1) {
+    // المستخدم قيّم قبل كده → نعدّل التقييم
+    ratings[existingIndex].value = rating;
+  } else {
+    // أول مرة يقيم
+    ratings.push({
+      userId: currentUser.uid,
+      value: rating,
     });
+  }
 
-    fetchProducts();
-  };
+  // نحسب الإجمالي
+  const ratingTotal = ratings.reduce((acc, r) => acc + r.value, 0);
+  const ratingCount = ratings.length;
+
+  await updateDoc(productRef, {
+    ratings,
+    ratingTotal,
+    ratingCount,
+  });
+
+  fetchProducts();
+};
 
   /* 🔄 Load Orders */
   const fetchOrders = async () => {

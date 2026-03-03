@@ -15,14 +15,11 @@ function ProductDetails() {
   const [selectedColor, setSelectedColor] = useState(null);
 
   /* ⭐ Average Rating */
-  const averageRating = useMemo(() => {
-    if (!product || !Array.isArray(product.ratings) || product.ratings.length === 0) {
-      return 0;
-    }
-    const total = product.ratings.reduce((acc, curr) => acc + curr, 0);
-    return (total / product.ratings.length).toFixed(1);
-  }, [product]);
+ const averageRating = useMemo(() => {
+  if (!product || !product.ratingCount) return 0;
 
+  return (product.ratingTotal / product.ratingCount).toFixed(1);
+}, [product]);
   /* 🔥 Similar Products */
   const similarProducts = useMemo(() => {
     if (!product) return [];
@@ -128,16 +125,17 @@ function ProductDetails() {
           {/* Rating */}
           <div className="flex items-center gap-2 mb-4">
             {[1,2,3,4,5].map((star) => (
-              <span
-                key={star}
-                className={`text-2xl ${
-                  star <= Math.round(averageRating)
-                    ? "text-yellow-400"
-                    : "text-gray-300"
-                }`}
-              >
-                ★
-              </span>
+            <button
+  key={star}
+  onClick={() => addRating(product.id, star)}
+  className={`text-2xl transition ${
+    star <= Math.round(averageRating)
+      ? "text-yellow-400"
+      : "text-gray-300"
+  } hover:scale-125`}
+>
+  ★
+</button>
             ))}
             <span className="text-gray-500 text-sm">
               ({averageRating})
