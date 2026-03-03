@@ -92,15 +92,24 @@ function Products({ customProducts, title }) {
                 )}
 
                 {/* 🔥 الصورة الأساسية */}
-                <img
-                  src={product.mainImage || product.image}
-                  alt={product.name}
-                  className="w-full h-64 object-contain mb-6"
-                />
+                {/* 🔥 الصورة الأساسية */}
+<div
+  onClick={() => navigate(`/product/${product.id}`)}
+  className="cursor-pointer overflow-hidden"
+>
+  <img
+    src={product.mainImage || product.image}
+    alt={product.name}
+    className="w-full h-64 object-contain mb-6 hover:scale-110 transition duration-500"
+  />
+</div>
 
-                <h3 className="text-xl font-semibold mb-2">
-                  {product.name}
-                </h3>
+             <h3
+  onClick={() => navigate(`/product/${product.id}`)}
+  className="text-xl font-semibold mb-2 cursor-pointer hover:text-gray-600 transition"
+>
+  {product.name}
+</h3>
 
                 <p className="text-gray-500 mb-4">
                   {parseInt(product.price)} EGP
@@ -129,7 +138,10 @@ function Products({ customProducts, title }) {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => handleAddToCart(product)}
+                   onClick={(e) => {
+  e.stopPropagation();
+  handleAddToCart(product);
+}}
                     className="w-full bg-gray-200 py-3 rounded-full hover:bg-gray-300 transition"
                   >
                     Add to Cart
