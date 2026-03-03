@@ -218,9 +218,7 @@ function ProductDetails() {
                 <p className="text-gray-500">
                   {item.price} EGP
                 </p>
-                <p className="text-sm text-green-600 mt-2">
-                  {item.salesCount || 0} عملية بيع
-                </p>
+              
               </div>
             ))}
           </div>
