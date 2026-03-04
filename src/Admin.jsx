@@ -28,7 +28,7 @@ function Admin() {
     return <Navigate to="/" />;
   }
 
-  /* 👇 سيبنا شرط localStorage زي ما هو علشان مفيش حاجة تبوظ */
+  
   if (localStorage.getItem("isAdmin") !== "true") {
     return <Navigate to="/admin-login" />;
   }
@@ -179,10 +179,32 @@ function Admin() {
                   {order.product?.name}
                 </h3>
 
-                <p><strong>Name:</strong> {order.fullName}</p>
-                <p><strong>Phone:</strong> {order.phone}</p>
-                <p><strong>Price:</strong> {order.product?.price} EGP</p>
+             <div className="flex items-center gap-6">
 
+<img
+  src={order.product?.mainImage || order.product?.image}
+  className="w-20 h-20 object-cover rounded-lg"
+/>
+
+<div>
+<h3 className="font-bold text-lg">
+  {order.product?.name}
+</h3>
+
+<p><strong>Name:</strong> {order.fullName}</p>
+
+<p><strong>Phone:</strong> {order.phone}</p>
+
+<p><strong>Color:</strong> {order.selectedColor}</p>
+
+<p><strong>Address:</strong> {order.address}</p>
+
+<p><strong>Governorate:</strong> {order.governorate}</p>
+
+<p><strong>Price:</strong> {order.product?.price} EGP</p>
+</div>
+
+</div>
                 {order.couponCode && (
                   <div className="mt-2 bg-green-50 p-3 rounded-lg text-sm">
                     <p><strong>Coupon:</strong> {order.couponCode}</p>
