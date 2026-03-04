@@ -39,23 +39,26 @@ function Admin() {
   const [showNotification, setShowNotification] = useState(false);
   const prevOrdersCount = useRef(orders.length);
 
-  useEffect(() => {
-    if (orders.length > prevOrdersCount.current) {
-      setShowNotification(true);
+useEffect(() => {
+  if (orders.length > prevOrdersCount.current) {
 
-      const audio = new Audio(
-        "https://actions.google.com/sounds/v1/alarms/notification_alert.ogg"
-      );
+    setShowNotification(true);
 
-      audio.play().catch(() => {
-        console.log("User interaction required before playing sound.");
-      });
+    const audio = new Audio(
+      "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"
+    );
 
-      setTimeout(() => setShowNotification(false), 4000);
-    }
+    audio.volume = 1;
+    audio.play().catch(() => {});
 
-    prevOrdersCount.current = orders.length;
-  }, [orders]);
+    setTimeout(() => {
+      setShowNotification(false);
+    }, 5000);
+
+  }
+
+  prevOrdersCount.current = orders.length;
+}, [orders]);
 
   /* 💰 Revenue */
   const totalRevenue = orders
@@ -103,7 +106,15 @@ function Admin() {
 
       {/* Header */}
       <div className="max-w-7xl mx-auto flex justify-between items-center mb-10">
-        <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+        
+        <h1 className="text-4xl font-bold flex items-center gap-3">
+Admin Dashboard
+
+<span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full">
+{orders.filter(o => o.status === "Pending").length}
+</span>
+
+</h1>
         <button
           onClick={handleLogout}
           className="bg-black text-white px-6 py-2 rounded-full hover:scale-105 transition"
