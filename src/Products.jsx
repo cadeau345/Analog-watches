@@ -100,7 +100,7 @@ function Products({ customProducts, title }) {
   <img
     src={product.mainImage || product.image}
     alt={product.name}
-  className="w-full h-40 md:h-64 object-contain mb-6 hover:scale-110 transition duration-500"
+    className="w-full h-64 object-contain mb-6 hover:scale-110 transition duration-500"
   />
 </div>
 
@@ -116,25 +116,31 @@ function Products({ customProducts, title }) {
                 </p>
 
                 {/* 🎨 عرض الألوان لو موجودة في الكوليكشن */}
-                {product.collections && product.collections.length > 0 && (
-                  <div className="flex gap-2 mb-4 flex-wrap">
-                    {product.collections.map((variant, i) => (
-                      <button
-                        key={i}
-                        onClick={() =>
-                          handleColorSelect(product.id, variant.color)
-                        }
-                        className={`px-3 py-1 rounded-full text-sm border transition ${
-                          selectedColors[product.id] === variant.color
-                            ? "bg-black text-white"
-                            : "bg-gray-100"
-                        }`}
-                      >
-                        {variant.color}
-                      </button>
-                    ))}
-                  </div>
-                )}
+      {product.collections && product.collections.length > 0 && (
+  <div className="flex gap-2 mb-4 flex-wrap">
+    {product.collections.slice(0, 2).map((variant, i) => (
+      <button
+        key={i}
+        onClick={() =>
+          handleColorSelect(product.id, variant.color)
+        }
+        className={`px-3 py-1 rounded-full text-xs border transition ${
+          selectedColors[product.id] === variant.color
+            ? "bg-black text-white"
+            : "bg-gray-100"
+        }`}
+      >
+        {variant.color}
+      </button>
+    ))}
+
+    {product.collections.length > 2 && (
+      <span className="px-2 py-1 text-xs text-gray-500">
+        +{product.collections.length - 2}
+      </span>
+    )}
+  </div>
+)}
 
                 <div className="flex gap-3">
                   <button
