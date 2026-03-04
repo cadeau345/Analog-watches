@@ -75,7 +75,7 @@ function Products({ customProducts, title }) {
             No products found.
           </div>
         ) : (
-          <div className="grid md:grid-cols-3 gap-10">
+         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {displayedProducts.map((product, index) => (
               <motion.div
                 key={product.id}
@@ -100,7 +100,7 @@ function Products({ customProducts, title }) {
   <img
     src={product.mainImage || product.image}
     alt={product.name}
-    className="w-full h-64 object-contain mb-6 hover:scale-110 transition duration-500"
+  className="w-full h-40 md:h-64 object-contain mb-6 hover:scale-110 transition duration-500"
   />
 </div>
 
