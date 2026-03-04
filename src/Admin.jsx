@@ -2,6 +2,8 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { OrderContext } from "./OrderContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import ProductManager from "./ProductManager";
+import { requestNotificationPermission } from "./firebase-messaging";
+import { useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -13,6 +15,9 @@ import {
 
 function Admin() {
   const navigate = useNavigate();
+  useEffect(() => {
+  requestNotificationPermission();
+}, []);
 
   /* 🔐 NEW: Auth Protection */
   const { currentUser } = useContext(OrderContext);
