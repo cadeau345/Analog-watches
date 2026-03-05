@@ -58,7 +58,7 @@ useEffect(() => {
         setOrdersCount(prev => prev + newOrders.length);
 
         // صوت تنبيه
-        const audio = new Audio("/notification.mp3");
+        const audio = new Audio("notification.mp3");
 audio.volume = 1;
 audio.currentTime = 0;
 audio.play();
