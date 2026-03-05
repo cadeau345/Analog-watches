@@ -41,29 +41,38 @@ function Admin() {
   const { orders, updateStatus } = useContext(OrderContext);
 
   /* 🔔 Notification System */
-  const [showNotification, setShowNotification] = useState(false);
-  const prevOrdersCount = useRef(orders.length);
+  const [ordersCount, setOrdersCount] = useState(0);
 
 useEffect(() => {
-  if (orders.length > prevOrdersCount.current) {
 
-    setShowNotification(true);
+  const unsubscribe = onSnapshot(
+    collection(db, "orders"),
+    (snapshot) => {
 
-    const audio = new Audio(
-      "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"
-    );
+      const newOrders = snapshot.docChanges().filter(
+        change => change.type === "added"
+      );
 
-    audio.volume = 1;
-    audio.play().catch(() => {});
+      if (newOrders.length > 0) {
 
-    setTimeout(() => {
-      setShowNotification(false);
-    }, 5000);
+        setOrdersCount(prev => prev + newOrders.length);
 
-  }
+        // صوت تنبيه
+        const audio = new Audio("/notification.mp3");
+audio.volume = 1;
+audio.currentTime = 0;
+audio.play();
+        // إشعار
+        alert("🛒 New Order Received!");
 
-  prevOrdersCount.current = orders.length;
-}, [orders]);
+      }
+
+    }
+  );
+
+  return () => unsubscribe();
+
+}, []);
 
   /* 💰 Revenue */
   const totalRevenue = orders
