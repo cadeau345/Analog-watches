@@ -232,7 +232,7 @@ function Admin() {
 
                   <p><strong>Phone:</strong> {order.phone}</p>
 
-                  <p><strong>Color:</strong> {order.selectedColor}</p>
+          <p><strong>Color:</strong> {order.selectedColor || order.product?.selectedColor}</p>
 
                   <p><strong>Address:</strong> {order.address}</p>
 
