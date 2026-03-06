@@ -27,12 +27,16 @@ function Checkout() {
   ];
 
   const [formData, setFormData] = useState({
-    fullName: "",
-    phone: "",
-    altPhone: "",
-    governorate: "",
-    address: "",
-  });
+
+  fullName,
+  phone,
+  address,
+  governorate,
+
+  product,
+  selectedColor: product.selectedColor,
+
+});
 
   const handleChange = (e) => {
     setFormData(prev => ({
