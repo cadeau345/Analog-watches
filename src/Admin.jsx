@@ -1,12 +1,9 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { OrderContext } from "./OrderContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import ProductManager from "./ProductManager";
 import { requestNotificationPermission } from "./firebase-messaging";
-
-import { collection, onSnapshot } from "firebase/firestore";
-import { db } from "./firebase";
-
+import { useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -17,228 +14,206 @@ import {
 } from "recharts";
 
 function Admin() {
-
-const navigate = useNavigate();
-
-const { currentUser, orders, updateStatus } = useContext(OrderContext);
-
-const ADMIN_EMAIL = "moazmahmoud@gmail.com";
-
-const [ordersCount, setOrdersCount] = useState(0);
-const [showNotification, setShowNotification] = useState(false);
-
-useEffect(() => {
-requestNotificationPermission();
+  const navigate = useNavigate();
+  useEffect(() => {
+  requestNotificationPermission();
 }, []);
 
+  /* 🔐 NEW: Auth Protection */
+  const { currentUser } = useContext(OrderContext);
+
+  // غير الايميل ده بايميلك انت
+  const ADMIN_EMAIL = "moazmahmoud@gmail.com";
+
+  if (!currentUser) {
+    return <Navigate to="/admin-login" />;
+  }
+
+  if (currentUser.email !== ADMIN_EMAIL) {
+    return <Navigate to="/" />;
+  }
+
+  
+  if (localStorage.getItem("isAdmin") !== "true") {
+    return <Navigate to="/admin-login" />;
+  }
+
+  const { orders, updateStatus } = useContext(OrderContext);
+
+  /* 🔔 Notification System */
+  const [ordersCount, setOrdersCount] = useState(0);
+
 useEffect(() => {
 
-const unsubscribe = onSnapshot(
-collection(db,"orders"),
-(snapshot)=>{
+  const unsubscribe = onSnapshot(
+    collection(db, "orders"),
+    (snapshot) => {
 
-const newOrders = snapshot.docChanges().filter(
-change => change.type === "added"
-);
+      const newOrders = snapshot.docChanges().filter(
+        change => change.type === "added"
+      );
 
-if(newOrders.length > 0){
+      if (newOrders.length > 0) {
 
-setOrdersCount(prev => prev + newOrders.length);
+        setOrdersCount(prev => prev + newOrders.length);
 
-setShowNotification(true);
-
-setTimeout(()=>{
-setShowNotification(false);
-},4000);
-
-// صوت
-const audio = new Audio("/notification.mp3");
+        // صوت تنبيه
+        const audio = new Audio("notification.mp3");
 audio.volume = 1;
 audio.currentTime = 0;
-audio.play().catch(()=>{});
+audio.play();
+        // إشعار
+        alert("🛒 New Order Received!");
 
-}
+      }
 
-});
+    }
+  );
 
-return ()=>unsubscribe();
+  return () => unsubscribe();
 
-},[]);
+}, []);
 
-/* 🔐 Admin Protection */
+  /* 💰 Revenue */
+  const totalRevenue = orders
+    .filter((o) => o.status === "Delivered")
+    .reduce(
+      (acc, curr) => acc + (parseInt(curr.product?.price) || 0),
+      0
+    );
 
-if(!currentUser){
-return <Navigate to="/admin-login"/>;
-}
+  const pendingCount = orders.filter((o) => o.status === "Pending").length;
+  const deliveredCount = orders.filter((o) => o.status === "Delivered").length;
+  const cancelledCount = orders.filter((o) => o.status === "Cancelled").length;
 
-if(currentUser.email !== ADMIN_EMAIL){
-return <Navigate to="/"/>;
-}
+  const handleLogout = () => {
+    localStorage.removeItem("isAdmin");
+    navigate("/");
+  };
 
-if(localStorage.getItem("isAdmin") !== "true"){
-return <Navigate to="/admin-login"/>;
-}
+  const chartData = [
+    { name: "Pending", value: pendingCount },
+    { name: "Delivered", value: deliveredCount },
+    { name: "Cancelled", value: cancelledCount },
+  ];
 
-/* 💰 Revenue */
+  /* 📊 Coupon Stats */
+  const couponStats = orders.reduce((acc, order) => {
+    if (!order.couponCode) return acc;
 
-const totalRevenue = orders
-.filter(o=>o.status === "Delivered")
-.reduce(
-(acc,curr)=> acc + (parseInt(curr.product?.price)||0),
-0
-);
+    if (!acc[order.couponCode]) {
+      acc[order.couponCode] = [];
+    }
 
-const pendingCount = orders.filter(o=>o.status==="Pending").length;
-const deliveredCount = orders.filter(o=>o.status==="Delivered").length;
-const cancelledCount = orders.filter(o=>o.status==="Cancelled").length;
+    acc[order.couponCode].push(order);
+    return acc;
+  }, {});
 
-const handleLogout = ()=>{
-localStorage.removeItem("isAdmin");
-navigate("/");
-};
+  return (
+    <div className="min-h-screen bg-gray-50 pt-28 px-6">
 
-const chartData = [
-{ name:"Pending", value:pendingCount },
-{ name:"Delivered", value:deliveredCount },
-{ name:"Cancelled", value:cancelledCount }
-];
+      {showNotification && (
+        <div className="fixed top-5 right-5 bg-black text-white px-6 py-4 rounded-xl shadow-xl z-50 animate-bounce">
+          🛒 New Order Received!
+        </div>
+      )}
 
-/* 📊 Coupon Stats */
-
-const couponStats = orders.reduce((acc,order)=>{
-
-if(!order.couponCode) return acc;
-
-if(!acc[order.couponCode]){
-acc[order.couponCode] = [];
-}
-
-acc[order.couponCode].push(order);
-
-return acc;
-
-},{});
-
-return(
-
-<div className="min-h-screen bg-gray-50 pt-28 px-6">
-
-{showNotification && (
-<div className="fixed top-5 right-5 bg-black text-white px-6 py-4 rounded-xl shadow-xl z-50 animate-bounce">
-🛒 New Order Received
-</div>
-)}
-
-<div className="max-w-7xl mx-auto flex justify-between items-center mb-10">
-
-<h1 className="text-4xl font-bold flex items-center gap-3">
-
+      {/* Header */}
+      <div className="max-w-7xl mx-auto flex justify-between items-center mb-10">
+        
+        <h1 className="text-4xl font-bold flex items-center gap-3">
 Admin Dashboard
 
 <span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full">
-{pendingCount}
+{orders.filter(o => o.status === "Pending").length}
 </span>
 
 </h1>
+        <button
+          onClick={handleLogout}
+          className="bg-black text-white px-6 py-2 rounded-full hover:scale-105 transition"
+        >
+          Logout
+        </button>
+      </div>
 
-<button
-onClick={handleLogout}
-className="bg-black text-white px-6 py-2 rounded-full hover:scale-105 transition"
->
-Logout
-</button>
+      {/* Stats */}
+      <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-6 mb-16">
+        <div className="bg-white shadow-lg p-6 rounded-2xl">
+          <h3>Total Orders</h3>
+          <p className="text-3xl font-bold">{orders.length}</p>
+        </div>
 
-</div>
+        <div className="bg-white shadow-lg p-6 rounded-2xl">
+          <h3>Pending</h3>
+          <p className="text-3xl font-bold text-yellow-500">
+            {pendingCount}
+          </p>
+        </div>
 
-{/* Stats */}
+        <div className="bg-white shadow-lg p-6 rounded-2xl">
+          <h3>Delivered</h3>
+          <p className="text-3xl font-bold text-green-600">
+            {deliveredCount}
+          </p>
+        </div>
 
-<div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-6 mb-16">
+        <div className="bg-white shadow-lg p-6 rounded-2xl">
+          <h3>Revenue</h3>
+          <p className="text-3xl font-bold">
+            {totalRevenue} EGP
+          </p>
+        </div>
+      </div>
 
-<div className="bg-white shadow-lg p-6 rounded-2xl">
-<h3>Total Orders</h3>
-<p className="text-3xl font-bold">{orders.length}</p>
-</div>
+      {/* Chart */}
+      <div className="max-w-7xl mx-auto bg-white p-6 rounded-2xl shadow-lg mb-16">
+        <h2 className="text-2xl font-bold mb-6">
+          Sales Overview
+        </h2>
 
-<div className="bg-white shadow-lg p-6 rounded-2xl">
-<h3>Pending</h3>
-<p className="text-3xl font-bold text-yellow-500">
-{pendingCount}
-</p>
-</div>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={chartData}>
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="value" fill="#000000" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
 
-<div className="bg-white shadow-lg p-6 rounded-2xl">
-<h3>Delivered</h3>
-<p className="text-3xl font-bold text-green-600">
-{deliveredCount}
-</p>
-</div>
+      {/* Manage Products */}
+      <div className="max-w-7xl mx-auto mb-16">
+        <h2 className="text-3xl font-bold mb-6">
+          Manage Products
+        </h2>
+        <ProductManager />
+      </div>
 
-<div className="bg-white shadow-lg p-6 rounded-2xl">
-<h3>Revenue</h3>
-<p className="text-3xl font-bold">
-{totalRevenue} EGP
-</p>
-</div>
+      {/* Orders */}
+      <div className="max-w-7xl mx-auto space-y-6">
+        {orders.map((order) => (
+          <div
+            key={order.id}
+            className="bg-white shadow-md p-6 rounded-2xl border"
+          >
+            <div className="flex justify-between flex-wrap gap-6">
 
-</div>
+              <div>
+                <h3 className="font-bold text-lg">
+                  {order.product?.name}
+                </h3>
 
-{/* Chart */}
-
-<div className="max-w-7xl mx-auto bg-white p-6 rounded-2xl shadow-lg mb-16">
-
-<h2 className="text-2xl font-bold mb-6">
-Sales Overview
-</h2>
-
-<ResponsiveContainer width="100%" height={300}>
-
-<BarChart data={chartData}>
-<XAxis dataKey="name"/>
-<YAxis/>
-<Tooltip/>
-<Bar dataKey="value" fill="#000000"/>
-</BarChart>
-
-</ResponsiveContainer>
-
-</div>
-
-{/* Manage Products */}
-
-<div className="max-w-7xl mx-auto mb-16">
-
-<h2 className="text-3xl font-bold mb-6">
-Manage Products
-</h2>
-
-<ProductManager/>
-
-</div>
-
-{/* Orders */}
-
-<div className="max-w-7xl mx-auto space-y-6">
-
-{orders.map(order => (
-
-<div
-key={order.id}
-className="bg-white shadow-md p-6 rounded-2xl border"
->
-
-<div className="flex justify-between flex-wrap gap-6">
-
-<div className="flex items-center gap-6">
+             <div className="flex items-center gap-6">
 
 <img
-src={order.product?.mainImage || order.product?.image}
-className="w-20 h-20 object-cover rounded-lg"
+  src={order.product?.mainImage || order.product?.image}
+  className="w-20 h-20 object-cover rounded-lg"
 />
 
 <div>
-
 <h3 className="font-bold text-lg">
-{order.product?.name}
+  {order.product?.name}
 </h3>
 
 <p><strong>Name:</strong> {order.fullName}</p>
@@ -252,49 +227,93 @@ className="w-20 h-20 object-cover rounded-lg"
 <p><strong>Governorate:</strong> {order.governorate}</p>
 
 <p><strong>Price:</strong> {order.product?.price} EGP</p>
-
 </div>
 
 </div>
+                {order.couponCode && (
+                  <div className="mt-2 bg-green-50 p-3 rounded-lg text-sm">
+                    <p><strong>Coupon:</strong> {order.couponCode}</p>
+                    <p><strong>Discount:</strong> {order.discountAmount} EGP</p>
+                  </div>
+                )}
+              </div>
 
-<div className="flex gap-3">
+              <div className="flex gap-3">
+                {order.status !== "Delivered" && (
+                  <button
+                    onClick={() => updateStatus(order.id, "Delivered")}
+                    className="bg-green-500 text-white px-4 py-2 rounded-full"
+                  >
+                    Mark Delivered
+                  </button>
+                )}
 
-{order.status !== "Delivered" && (
+                {order.status !== "Cancelled" && (
+                  <button
+                    onClick={() => updateStatus(order.id, "Cancelled")}
+                    className="bg-red-500 text-white px-4 py-2 rounded-full"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
 
-<button
-onClick={()=>updateStatus(order.id,"Delivered")}
-className="bg-green-500 text-white px-4 py-2 rounded-full"
->
-Mark Delivered
-</button>
+            </div>
+          </div>
+        ))}
+      </div>
 
-)}
+      {/* Coupon Detailed Usage */}
+      <div className="max-w-7xl mx-auto bg-white p-6 rounded-2xl shadow-lg mt-20">
+        <h2 className="text-2xl font-bold mb-6">
+          Coupon Detailed Usage
+        </h2>
 
-{order.status !== "Cancelled" && (
+        {Object.keys(couponStats).length === 0 ? (
+          <p>No coupon orders yet.</p>
+        ) : (
+          Object.keys(couponStats).map((code) => {
+            const relatedOrders = couponStats[code];
 
-<button
-onClick={()=>updateStatus(order.id,"Cancelled")}
-className="bg-red-500 text-white px-4 py-2 rounded-full"
->
-Cancel
-</button>
+            const totalDiscount = relatedOrders.reduce(
+              (acc, order) =>
+                acc + (order.discountAmount || 0),
+              0
+            );
 
-)}
+            return (
+              <div
+                key={code}
+                className="mb-8 border p-6 rounded-xl"
+              >
+                <h3 className="text-xl font-bold mb-4">
+                  Coupon: {code}
+                </h3>
 
-</div>
+                <p>Total Uses: {relatedOrders.length}</p>
+                <p>Total Discount: {totalDiscount} EGP</p>
 
-</div>
+                <div className="space-y-3 mt-4">
+                  {relatedOrders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="bg-gray-50 p-4 rounded-lg text-sm"
+                    >
+                      <p><strong>Name:</strong> {order.fullName}</p>
+                      <p><strong>Phone:</strong> {order.phone}</p>
+                      <p><strong>Product:</strong> {order.product?.name}</p>
+                      <p><strong>Discount:</strong> {order.discountAmount} EGP</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
 
-</div>
-
-))}
-
-</div>
-
-</div>
-
-);
-
+    </div>
+  );
 }
 
 export default Admin;
