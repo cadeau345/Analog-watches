@@ -17,14 +17,20 @@ import NewArrivals from "./NewArrivals";
 import Cart from "./Cart";
 import Contact from "./Contact";
 import Orders from "./Orders";
+
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
+
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
+
 import { useEffect, useState } from "react";
 
+
 /* 🔥 Scroll Progress Bar */
+
 function ScrollProgress() {
+
   const { scrollYProgress } = useScroll();
 
   return (
@@ -34,65 +40,76 @@ function ScrollProgress() {
     />
   );
 }
-const [ordersCount, setOrdersCount] = useState(0);
 
-useEffect(() => {
 
-  const unsubscribe = onSnapshot(
-    collection(db, "orders"),
-    (snapshot) => {
 
-      const newOrders = snapshot.docChanges().filter(
-        change => change.type === "added"
-      );
+function App() {
 
-      if (newOrders.length > 0) {
+  const [ordersCount, setOrdersCount] = useState(0);
 
-        setOrdersCount(prev => prev + newOrders.length);
+  useEffect(() => {
 
-        // صوت
-        const audio = new Audio("/notification.mp3");
-        audio.volume = 1;
-        audio.play();
+    const unsubscribe = onSnapshot(
+      collection(db, "orders"),
+      (snapshot) => {
 
-        // إشعار
-        toast.success("🛒 New Order Received!");
+        const newOrders = snapshot.docChanges().filter(
+          change => change.type === "added"
+        );
+
+        if (newOrders.length > 0) {
+
+          setOrdersCount(prev => prev + newOrders.length);
+
+          // صوت
+          const audio = new Audio("/notification.mp3");
+          audio.volume = 1;
+          audio.play();
+
+          // إشعار
+          toast.success("🛒 New Order Received!");
+
+        }
 
       }
+    );
 
-    }
-  );
+    return () => unsubscribe();
 
-  return () => unsubscribe();
+  }, []);
 
-}, []);
-function App() {
+
+
   return (
     <>
-    <Toaster position="top-right" />
+      <Toaster position="top-right" />
+
       <ScrollProgress />
+
       <Navbar />
 
       <div className="pt-20">
+
         <Routes>
 
           {/* 🏠 Home */}
+
           <Route
             path="/"
             element={
               <>
                 <Hero />
 
-                {/* 🔥 ID علشان الهيرو يعمل Scroll */}
                 <div id="products-section">
                   <Products />
                 </div>
-<div className="bg-red-500 text-white px-3 py-1 rounded-full">
-{ordersCount}
-</div>
+
+                <div className="bg-red-500 text-white px-3 py-1 rounded-full">
+                  {ordersCount}
+                </div>
+
                 <WhyChooseUs />
 
-                {/* 🔥 New Section ID */}
                 <div id="new-section">
                   <NewArrivals />
                 </div>
@@ -130,6 +147,7 @@ function App() {
           <Route path="/orders" element={<Orders />} />
 
         </Routes>
+
       </div>
     </>
   );
