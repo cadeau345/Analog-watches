@@ -55,7 +55,7 @@ function WhyChooseUs() {
             <div className="text-5xl mb-6">🔄</div>
             <h3 className="text-xl font-semibold mb-3">Easy Returns</h3>
             <p className="text-gray-600">
-              7-day replacement guarantee for peace of mind.
+              3-day replacement guarantee for peace of mind.
             </p>
           </motion.div>
 
