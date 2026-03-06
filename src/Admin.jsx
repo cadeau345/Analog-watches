@@ -2,8 +2,6 @@ import { useContext, useEffect, useState } from "react";
 import { OrderContext } from "./OrderContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import ProductManager from "./ProductManager";
-import { requestNotificationPermission } from "./firebase-messaging";
-
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -18,309 +16,271 @@ import {
 
 function Admin() {
 
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
-const { currentUser, orders, updateStatus } = useContext(OrderContext);
+  const { currentUser, orders, updateStatus } = useContext(OrderContext);
 
-const ADMIN_EMAIL = "moazmahmoud@gmail.com";
+  const ADMIN_EMAIL = "moazmahmoud@gmail.com";
 
-const [liveOrders,setLiveOrders] = useState([]);
-const [showNotification,setShowNotification] = useState(false);
-const [newOrders,setNewOrders] = useState([]);
+  if (!currentUser) {
+    return <Navigate to="/admin-login" />;
+  }
 
-useEffect(()=>{
-requestNotificationPermission();
-},[]);
+  if (currentUser.email !== ADMIN_EMAIL) {
+    return <Navigate to="/" />;
+  }
 
-/* 🔔 Realtime Orders */
+  if (localStorage.getItem("isAdmin") !== "true") {
+    return <Navigate to="/admin-login" />;
+  }
 
-useEffect(()=>{
+  const [showNotification, setShowNotification] = useState(false);
 
-const unsubscribe = onSnapshot(
-collection(db,"orders"),
-(snapshot)=>{
+  /* 🔔 Real Time Order Notification */
 
-const changes = snapshot.docChanges();
+  useEffect(() => {
 
-changes.forEach(change=>{
+    const unsubscribe = onSnapshot(
+      collection(db, "orders"),
+      (snapshot) => {
 
-if(change.type === "added"){
+        const newOrders = snapshot.docChanges().filter(
+          change => change.type === "added"
+        );
 
-const order = {
-id: change.doc.id,
-...change.doc.data()
-};
+        if (newOrders.length > 0) {
 
-setLiveOrders(prev => [order,...prev]);
+          setShowNotification(true);
 
-setNewOrders(prev => [...prev,order.id]);
+          const audio = new Audio("/notification.mp3");
+          audio.volume = 1;
+          audio.play().catch(()=>{});
 
-setShowNotification(true);
+          setTimeout(() => {
+            setShowNotification(false);
+          }, 4000);
 
-setTimeout(()=>{
-setShowNotification(false);
-},4000);
+        }
 
-// صوت
-const audio = new Audio("/notification.mp3");
-audio.volume = 1;
-audio.play().catch(()=>{});
+      }
+    );
 
-}
+    return () => unsubscribe();
 
-});
+  }, []);
 
-});
+  /* 💰 Revenue */
 
-return ()=>unsubscribe();
+  const totalRevenue = orders
+    .filter(o => o.status === "Delivered")
+    .reduce(
+      (acc, curr) => acc + (parseInt(curr.product?.price) || 0),
+      0
+    );
 
-},[]);
+  const pendingCount = orders.filter(o => o.status === "Pending").length;
+  const deliveredCount = orders.filter(o => o.status === "Delivered").length;
+  const cancelledCount = orders.filter(o => o.status === "Cancelled").length;
 
-/* 🔐 Admin Protection */
+  const handleLogout = () => {
+    localStorage.removeItem("isAdmin");
+    navigate("/");
+  };
 
-if(!currentUser){
-return <Navigate to="/admin-login"/>
-}
+  const chartData = [
+    { name: "Pending", value: pendingCount },
+    { name: "Delivered", value: deliveredCount },
+    { name: "Cancelled", value: cancelledCount },
+  ];
 
-if(currentUser.email !== ADMIN_EMAIL){
-return <Navigate to="/"/>
-}
+  /* 📊 Coupon Stats */
 
-if(localStorage.getItem("isAdmin") !== "true"){
-return <Navigate to="/admin-login"/>
-}
+  const couponStats = orders.reduce((acc, order) => {
 
-/* Combine Orders */
+    if (!order.couponCode) return acc;
 
-const allOrders = [...liveOrders,...orders];
+    if (!acc[order.couponCode]) {
+      acc[order.couponCode] = [];
+    }
 
-/* 💰 Revenue */
+    acc[order.couponCode].push(order);
 
-const totalRevenue = allOrders
-.filter(o=>o.status==="Delivered")
-.reduce(
-(acc,curr)=> acc + (parseInt(curr.product?.price)||0),
-0
-);
+    return acc;
 
-const pendingCount = allOrders.filter(o=>o.status==="Pending").length;
-const deliveredCount = allOrders.filter(o=>o.status==="Delivered").length;
-const cancelledCount = allOrders.filter(o=>o.status==="Cancelled").length;
+  }, {});
 
-const handleLogout = ()=>{
-localStorage.removeItem("isAdmin");
-navigate("/");
-};
+  return (
 
-const chartData = [
-{ name:"Pending", value:pendingCount },
-{ name:"Delivered", value:deliveredCount },
-{ name:"Cancelled", value:cancelledCount }
-];
+    <div className="min-h-screen bg-gray-50 pt-28 px-6">
 
-return(
+      {showNotification && (
+        <div className="fixed top-5 right-5 bg-black text-white px-6 py-4 rounded-xl shadow-xl z-50 animate-bounce">
+          🛒 New Order Received!
+        </div>
+      )}
 
-<div className="min-h-screen bg-gray-50 pt-28 px-6">
+      {/* Header */}
 
-{/* Notification */}
+      <div className="max-w-7xl mx-auto flex justify-between items-center mb-10">
 
-{showNotification && (
-<div className="fixed top-5 right-5 bg-black text-white px-6 py-4 rounded-xl shadow-xl z-50 animate-bounce">
-🛒 New Order Received
-</div>
-)}
+        <h1 className="text-4xl font-bold flex items-center gap-3">
 
-{/* Header */}
+          Admin Dashboard
 
-<div className="max-w-7xl mx-auto flex justify-between items-center mb-10">
+          <span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full">
+            {pendingCount}
+          </span>
 
-<h1 className="text-4xl font-bold flex items-center gap-3">
+        </h1>
 
-Admin Dashboard
+        <button
+          onClick={handleLogout}
+          className="bg-black text-white px-6 py-2 rounded-full hover:scale-105 transition"
+        >
+          Logout
+        </button>
 
-<span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full">
-{pendingCount}
-</span>
+      </div>
 
-</h1>
+      {/* Stats */}
 
-<button
-onClick={handleLogout}
-className="bg-black text-white px-6 py-2 rounded-full hover:scale-105 transition"
->
-Logout
-</button>
+      <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-6 mb-16">
 
-</div>
+        <div className="bg-white shadow-lg p-6 rounded-2xl">
+          <h3>Total Orders</h3>
+          <p className="text-3xl font-bold">{orders.length}</p>
+        </div>
 
-{/* Stats */}
+        <div className="bg-white shadow-lg p-6 rounded-2xl">
+          <h3>Pending</h3>
+          <p className="text-3xl font-bold text-yellow-500">
+            {pendingCount}
+          </p>
+        </div>
 
-<div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-6 mb-16">
+        <div className="bg-white shadow-lg p-6 rounded-2xl">
+          <h3>Delivered</h3>
+          <p className="text-3xl font-bold text-green-600">
+            {deliveredCount}
+          </p>
+        </div>
 
-<div className="bg-white shadow-lg p-6 rounded-2xl">
-<h3>Total Orders</h3>
-<p className="text-3xl font-bold">{allOrders.length}</p>
-</div>
+        <div className="bg-white shadow-lg p-6 rounded-2xl">
+          <h3>Revenue</h3>
+          <p className="text-3xl font-bold">
+            {totalRevenue} EGP
+          </p>
+        </div>
 
-<div className="bg-white shadow-lg p-6 rounded-2xl">
-<h3>Pending</h3>
-<p className="text-3xl font-bold text-yellow-500">
-{pendingCount}
-</p>
-</div>
+      </div>
 
-<div className="bg-white shadow-lg p-6 rounded-2xl">
-<h3>Delivered</h3>
-<p className="text-3xl font-bold text-green-600">
-{deliveredCount}
-</p>
-</div>
+      {/* Chart */}
 
-<div className="bg-white shadow-lg p-6 rounded-2xl">
-<h3>Revenue</h3>
-<p className="text-3xl font-bold">
-{totalRevenue} EGP
-</p>
-</div>
+      <div className="max-w-7xl mx-auto bg-white p-6 rounded-2xl shadow-lg mb-16">
 
-</div>
+        <h2 className="text-2xl font-bold mb-6">
+          Sales Overview
+        </h2>
 
-{/* Chart */}
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={chartData}>
+            <XAxis dataKey="name"/>
+            <YAxis/>
+            <Tooltip/>
+            <Bar dataKey="value" fill="#000000"/>
+          </BarChart>
+        </ResponsiveContainer>
 
-<div className="max-w-7xl mx-auto bg-white p-6 rounded-2xl shadow-lg mb-16">
+      </div>
 
-<h2 className="text-2xl font-bold mb-6">
-Sales Overview
-</h2>
+      {/* Manage Products */}
 
-<ResponsiveContainer width="100%" height={300}>
+      <div className="max-w-7xl mx-auto mb-16">
+        <h2 className="text-3xl font-bold mb-6">
+          Manage Products
+        </h2>
+        <ProductManager/>
+      </div>
 
-<BarChart data={chartData}>
-<XAxis dataKey="name"/>
-<YAxis/>
-<Tooltip/>
-<Bar dataKey="value" fill="#000000"/>
-</BarChart>
+      {/* Orders */}
 
-</ResponsiveContainer>
+      <div className="max-w-7xl mx-auto space-y-6">
 
-</div>
+        {orders.map(order => (
 
-{/* Manage Products */}
+          <div
+            key={order.id}
+            className="bg-white shadow-md p-6 rounded-2xl border"
+          >
 
-<div className="max-w-7xl mx-auto mb-16">
+            <div className="flex justify-between flex-wrap gap-6">
 
-<h2 className="text-3xl font-bold mb-6">
-Manage Products
-</h2>
+              <div className="flex items-center gap-6">
 
-<ProductManager/>
+                <img
+                  src={order.product?.mainImage || order.product?.image}
+                  className="w-20 h-20 object-cover rounded-lg"
+                />
 
-</div>
+                <div>
 
-{/* Orders */}
+                  <h3 className="font-bold text-lg">
+                    {order.product?.name}
+                  </h3>
 
-<div className="max-w-7xl mx-auto space-y-6">
+                  <p><strong>Name:</strong> {order.fullName}</p>
 
-{allOrders.map(order => (
+                  <p><strong>Phone:</strong> {order.phone}</p>
 
-<div
-key={order.id}
-className={`bg-white shadow-md p-6 rounded-2xl border
-${newOrders.includes(order.id) ? "border-green-500 bg-green-50" : ""}
-`}
->
+                  <p><strong>Color:</strong> {order.selectedColor}</p>
 
-<div className="flex justify-between flex-wrap gap-6">
+                  <p><strong>Address:</strong> {order.address}</p>
 
-<div className="flex items-center gap-6">
+                  <p><strong>Governorate:</strong> {order.governorate}</p>
 
-<img
-src={order.product?.mainImage || order.product?.image}
-className="w-20 h-20 object-cover rounded-lg"
-/>
+                  <p><strong>Price:</strong> {order.product?.price} EGP</p>
 
-<div>
+                </div>
 
-<h3 className="font-bold text-lg">
-{order.product?.name}
-</h3>
+              </div>
 
-<p><strong>Name:</strong> {order.fullName}</p>
+              <div className="flex gap-3">
 
-<p><strong>Phone:</strong> {order.phone}</p>
+                {order.status !== "Delivered" && (
 
-<p><strong>Color:</strong> {order.selectedColor}</p>
+                  <button
+                    onClick={() => updateStatus(order.id, "Delivered")}
+                    className="bg-green-500 text-white px-4 py-2 rounded-full"
+                  >
+                    Mark Delivered
+                  </button>
 
-<p><strong>Address:</strong> {order.address}</p>
+                )}
 
-<p><strong>Governorate:</strong> {order.governorate}</p>
+                {order.status !== "Cancelled" && (
 
-<p><strong>Price:</strong> {order.product?.price} EGP</p>
+                  <button
+                    onClick={() => updateStatus(order.id, "Cancelled")}
+                    className="bg-red-500 text-white px-4 py-2 rounded-full"
+                  >
+                    Cancel
+                  </button>
 
-{/* Buttons */}
+                )}
 
-<div className="flex gap-3 mt-3">
+              </div>
 
-<a
-href={`tel:${order.phone}`}
-className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm"
->
-Call
-</a>
+            </div>
 
-<a
-href={`https://www.google.com/maps/search/?api=1&query=${order.address}`}
-target="_blank"
-rel="noreferrer"
-className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm"
->
-Open Map
-</a>
+          </div>
 
-</div>
+        ))}
 
-</div>
+      </div>
 
-</div>
+    </div>
 
-<div className="flex gap-3">
-
-{order.status !== "Delivered" && (
-
-<button
-onClick={()=>updateStatus(order.id,"Delivered")}
-className="bg-green-500 text-white px-4 py-2 rounded-full"
->
-Mark Delivered
-</button>
-
-)}
-
-{order.status !== "Cancelled" && (
-
-<button
-onClick={()=>updateStatus(order.id,"Cancelled")}
-className="bg-red-500 text-white px-4 py-2 rounded-full"
->
-Cancel
-</button>
-
-)}
-
-</div>
-
-</div>
-
-</div>
-
-))}
-
-</div>
-
-</div>
-
-);
+  );
 
 }
 
