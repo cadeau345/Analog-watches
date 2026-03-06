@@ -24,26 +24,36 @@ const { currentUser, orders, updateStatus } = useContext(OrderContext);
 
 const ADMIN_EMAIL = "moazmahmoud@gmail.com";
 
-const [ordersCount, setOrdersCount] = useState(0);
-const [showNotification, setShowNotification] = useState(false);
+const [liveOrders,setLiveOrders] = useState([]);
+const [showNotification,setShowNotification] = useState(false);
+const [newOrders,setNewOrders] = useState([]);
 
-useEffect(() => {
+useEffect(()=>{
 requestNotificationPermission();
-}, []);
+},[]);
 
-useEffect(() => {
+/* 🔔 Realtime Orders */
+
+useEffect(()=>{
 
 const unsubscribe = onSnapshot(
 collection(db,"orders"),
 (snapshot)=>{
 
-const newOrders = snapshot.docChanges().filter(
-change => change.type === "added"
-);
+const changes = snapshot.docChanges();
 
-if(newOrders.length > 0){
+changes.forEach(change=>{
 
-setOrdersCount(prev => prev + newOrders.length);
+if(change.type === "added"){
+
+const order = {
+id: change.doc.id,
+...change.doc.data()
+};
+
+setLiveOrders(prev => [order,...prev]);
+
+setNewOrders(prev => [...prev,order.id]);
 
 setShowNotification(true);
 
@@ -54,10 +64,11 @@ setShowNotification(false);
 // صوت
 const audio = new Audio("/notification.mp3");
 audio.volume = 1;
-audio.currentTime = 0;
 audio.play().catch(()=>{});
 
 }
+
+});
 
 });
 
@@ -68,29 +79,33 @@ return ()=>unsubscribe();
 /* 🔐 Admin Protection */
 
 if(!currentUser){
-return <Navigate to="/admin-login"/>;
+return <Navigate to="/admin-login"/>
 }
 
 if(currentUser.email !== ADMIN_EMAIL){
-return <Navigate to="/"/>;
+return <Navigate to="/"/>
 }
 
 if(localStorage.getItem("isAdmin") !== "true"){
-return <Navigate to="/admin-login"/>;
+return <Navigate to="/admin-login"/>
 }
+
+/* Combine Orders */
+
+const allOrders = [...liveOrders,...orders];
 
 /* 💰 Revenue */
 
-const totalRevenue = orders
-.filter(o=>o.status === "Delivered")
+const totalRevenue = allOrders
+.filter(o=>o.status==="Delivered")
 .reduce(
 (acc,curr)=> acc + (parseInt(curr.product?.price)||0),
 0
 );
 
-const pendingCount = orders.filter(o=>o.status==="Pending").length;
-const deliveredCount = orders.filter(o=>o.status==="Delivered").length;
-const cancelledCount = orders.filter(o=>o.status==="Cancelled").length;
+const pendingCount = allOrders.filter(o=>o.status==="Pending").length;
+const deliveredCount = allOrders.filter(o=>o.status==="Delivered").length;
+const cancelledCount = allOrders.filter(o=>o.status==="Cancelled").length;
 
 const handleLogout = ()=>{
 localStorage.removeItem("isAdmin");
@@ -103,31 +118,19 @@ const chartData = [
 { name:"Cancelled", value:cancelledCount }
 ];
 
-/* 📊 Coupon Stats */
-
-const couponStats = orders.reduce((acc,order)=>{
-
-if(!order.couponCode) return acc;
-
-if(!acc[order.couponCode]){
-acc[order.couponCode] = [];
-}
-
-acc[order.couponCode].push(order);
-
-return acc;
-
-},{});
-
 return(
 
 <div className="min-h-screen bg-gray-50 pt-28 px-6">
+
+{/* Notification */}
 
 {showNotification && (
 <div className="fixed top-5 right-5 bg-black text-white px-6 py-4 rounded-xl shadow-xl z-50 animate-bounce">
 🛒 New Order Received
 </div>
 )}
+
+{/* Header */}
 
 <div className="max-w-7xl mx-auto flex justify-between items-center mb-10">
 
@@ -156,7 +159,7 @@ Logout
 
 <div className="bg-white shadow-lg p-6 rounded-2xl">
 <h3>Total Orders</h3>
-<p className="text-3xl font-bold">{orders.length}</p>
+<p className="text-3xl font-bold">{allOrders.length}</p>
 </div>
 
 <div className="bg-white shadow-lg p-6 rounded-2xl">
@@ -219,11 +222,13 @@ Manage Products
 
 <div className="max-w-7xl mx-auto space-y-6">
 
-{orders.map(order => (
+{allOrders.map(order => (
 
 <div
 key={order.id}
-className="bg-white shadow-md p-6 rounded-2xl border"
+className={`bg-white shadow-md p-6 rounded-2xl border
+${newOrders.includes(order.id) ? "border-green-500 bg-green-50" : ""}
+`}
 >
 
 <div className="flex justify-between flex-wrap gap-6">
@@ -252,6 +257,28 @@ className="w-20 h-20 object-cover rounded-lg"
 <p><strong>Governorate:</strong> {order.governorate}</p>
 
 <p><strong>Price:</strong> {order.product?.price} EGP</p>
+
+{/* Buttons */}
+
+<div className="flex gap-3 mt-3">
+
+<a
+href={`tel:${order.phone}`}
+className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm"
+>
+Call
+</a>
+
+<a
+href={`https://www.google.com/maps/search/?api=1&query=${order.address}`}
+target="_blank"
+rel="noreferrer"
+className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm"
+>
+Open Map
+</a>
+
+</div>
 
 </div>
 
