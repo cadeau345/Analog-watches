@@ -3,6 +3,7 @@ import { OrderContext } from "./OrderContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import ProductManager from "./ProductManager";
 import { requestNotificationPermission } from "./firebase-messaging";
+
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -18,13 +19,13 @@ import {
 function Admin() {
 
 const navigate = useNavigate();
-const { currentUser } = useContext(OrderContext);
-const { orders, updateStatus } = useContext(OrderContext);
+
+const { currentUser, orders, updateStatus } = useContext(OrderContext);
 
 const ADMIN_EMAIL = "moazmahmoud@gmail.com";
 
-const [liveOrders, setLiveOrders] = useState([]);
-const [newOrderIds, setNewOrderIds] = useState([]);
+const [ordersCount, setOrdersCount] = useState(0);
+const [showNotification, setShowNotification] = useState(false);
 
 useEffect(() => {
 requestNotificationPermission();
@@ -36,76 +37,65 @@ const unsubscribe = onSnapshot(
 collection(db,"orders"),
 (snapshot)=>{
 
-const changes = snapshot.docChanges();
+const newOrders = snapshot.docChanges().filter(
+change => change.type === "added"
+);
 
-changes.forEach(change=>{
+if(newOrders.length > 0){
 
-if(change.type === "added"){
+setOrdersCount(prev => prev + newOrders.length);
 
-const order = {
-id: change.doc.id,
-...change.doc.data()
-};
+setShowNotification(true);
 
-setLiveOrders(prev => [order,...prev]);
-
-setNewOrderIds(prev => [...prev, order.id]);
+setTimeout(()=>{
+setShowNotification(false);
+},4000);
 
 // صوت
 const audio = new Audio("/notification.mp3");
 audio.volume = 1;
+audio.currentTime = 0;
 audio.play().catch(()=>{});
-
-// Popup
-const popup = document.createElement("div");
-
-popup.innerText = "🛒 New Order Received";
-
-popup.style.position = "fixed";
-popup.style.top = "20px";
-popup.style.right = "20px";
-popup.style.background = "black";
-popup.style.color = "white";
-popup.style.padding = "15px 25px";
-popup.style.borderRadius = "10px";
-popup.style.zIndex = "9999";
-
-document.body.appendChild(popup);
-
-setTimeout(()=>{
-popup.remove();
-},4000);
 
 }
 
 });
 
-});
 return ()=>unsubscribe();
 
 },[]);
 
-if (!currentUser) {
-return <Navigate to="/admin-login" />;
+/* 🔐 Admin Protection */
+
+if(!currentUser){
+return <Navigate to="/admin-login"/>;
 }
 
-if (currentUser.email !== ADMIN_EMAIL) {
-return <Navigate to="/" />;
+if(currentUser.email !== ADMIN_EMAIL){
+return <Navigate to="/"/>;
 }
 
-if (localStorage.getItem("isAdmin") !== "true") {
-return <Navigate to="/admin-login" />;
+if(localStorage.getItem("isAdmin") !== "true"){
+return <Navigate to="/admin-login"/>;
 }
 
-const allOrders = [...liveOrders,...orders];
+/* 💰 Revenue */
 
-const totalRevenue = allOrders
-.filter(o=>o.status==="Delivered")
-.reduce((acc,curr)=> acc + (parseInt(curr.product?.price)||0),0);
+const totalRevenue = orders
+.filter(o=>o.status === "Delivered")
+.reduce(
+(acc,curr)=> acc + (parseInt(curr.product?.price)||0),
+0
+);
 
-const pendingCount = allOrders.filter(o=>o.status==="Pending").length;
-const deliveredCount = allOrders.filter(o=>o.status==="Delivered").length;
-const cancelledCount = allOrders.filter(o=>o.status==="Cancelled").length;
+const pendingCount = orders.filter(o=>o.status==="Pending").length;
+const deliveredCount = orders.filter(o=>o.status==="Delivered").length;
+const cancelledCount = orders.filter(o=>o.status==="Cancelled").length;
+
+const handleLogout = ()=>{
+localStorage.removeItem("isAdmin");
+navigate("/");
+};
 
 const chartData = [
 { name:"Pending", value:pendingCount },
@@ -113,14 +103,31 @@ const chartData = [
 { name:"Cancelled", value:cancelledCount }
 ];
 
-const handleLogout = ()=>{
-localStorage.removeItem("isAdmin");
-navigate("/");
-};
+/* 📊 Coupon Stats */
 
-return (
+const couponStats = orders.reduce((acc,order)=>{
+
+if(!order.couponCode) return acc;
+
+if(!acc[order.couponCode]){
+acc[order.couponCode] = [];
+}
+
+acc[order.couponCode].push(order);
+
+return acc;
+
+},{});
+
+return(
 
 <div className="min-h-screen bg-gray-50 pt-28 px-6">
+
+{showNotification && (
+<div className="fixed top-5 right-5 bg-black text-white px-6 py-4 rounded-xl shadow-xl z-50 animate-bounce">
+🛒 New Order Received
+</div>
+)}
 
 <div className="max-w-7xl mx-auto flex justify-between items-center mb-10">
 
@@ -143,29 +150,39 @@ Logout
 
 </div>
 
+{/* Stats */}
+
 <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-6 mb-16">
 
 <div className="bg-white shadow-lg p-6 rounded-2xl">
 <h3>Total Orders</h3>
-<p className="text-3xl font-bold">{allOrders.length}</p>
+<p className="text-3xl font-bold">{orders.length}</p>
 </div>
 
 <div className="bg-white shadow-lg p-6 rounded-2xl">
 <h3>Pending</h3>
-<p className="text-3xl font-bold text-yellow-500">{pendingCount}</p>
+<p className="text-3xl font-bold text-yellow-500">
+{pendingCount}
+</p>
 </div>
 
 <div className="bg-white shadow-lg p-6 rounded-2xl">
 <h3>Delivered</h3>
-<p className="text-3xl font-bold text-green-600">{deliveredCount}</p>
+<p className="text-3xl font-bold text-green-600">
+{deliveredCount}
+</p>
 </div>
 
 <div className="bg-white shadow-lg p-6 rounded-2xl">
 <h3>Revenue</h3>
-<p className="text-3xl font-bold">{totalRevenue} EGP</p>
+<p className="text-3xl font-bold">
+{totalRevenue} EGP
+</p>
 </div>
 
 </div>
+
+{/* Chart */}
 
 <div className="max-w-7xl mx-auto bg-white p-6 rounded-2xl shadow-lg mb-16">
 
@@ -176,15 +193,17 @@ Sales Overview
 <ResponsiveContainer width="100%" height={300}>
 
 <BarChart data={chartData}>
-<XAxis dataKey="name" />
-<YAxis />
-<Tooltip />
-<Bar dataKey="value" fill="#000000" />
+<XAxis dataKey="name"/>
+<YAxis/>
+<Tooltip/>
+<Bar dataKey="value" fill="#000000"/>
 </BarChart>
 
 </ResponsiveContainer>
 
 </div>
+
+{/* Manage Products */}
 
 <div className="max-w-7xl mx-auto mb-16">
 
@@ -196,15 +215,15 @@ Manage Products
 
 </div>
 
+{/* Orders */}
+
 <div className="max-w-7xl mx-auto space-y-6">
 
-{allOrders.map(order => (
+{orders.map(order => (
 
 <div
 key={order.id}
-className={`bg-white shadow-md p-6 rounded-2xl border
-${newOrderIds.includes(order.id) ? "border-green-500 bg-green-50" : ""}
-`}
+className="bg-white shadow-md p-6 rounded-2xl border"
 >
 
 <div className="flex justify-between flex-wrap gap-6">
@@ -212,11 +231,7 @@ ${newOrderIds.includes(order.id) ? "border-green-500 bg-green-50" : ""}
 <div className="flex items-center gap-6">
 
 <img
-src={
-order.product?.collections
-?.find(c => c.color === order.product?.selectedColor)
-?.images?.[0] || order.product?.mainImage
-}
+src={order.product?.mainImage || order.product?.image}
 className="w-20 h-20 object-cover rounded-lg"
 />
 
@@ -230,7 +245,7 @@ className="w-20 h-20 object-cover rounded-lg"
 
 <p><strong>Phone:</strong> {order.phone}</p>
 
-<p><strong>Color:</strong> {order.product?.selectedColor}</p>
+<p><strong>Color:</strong> {order.selectedColor}</p>
 
 <p><strong>Address:</strong> {order.address}</p>
 
@@ -250,9 +265,7 @@ className="w-20 h-20 object-cover rounded-lg"
 onClick={()=>updateStatus(order.id,"Delivered")}
 className="bg-green-500 text-white px-4 py-2 rounded-full"
 >
-
 Mark Delivered
-
 </button>
 
 )}
@@ -263,9 +276,7 @@ Mark Delivered
 onClick={()=>updateStatus(order.id,"Cancelled")}
 className="bg-red-500 text-white px-4 py-2 rounded-full"
 >
-
 Cancel
-
 </button>
 
 )}
