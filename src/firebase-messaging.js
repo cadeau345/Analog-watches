@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getMessaging, getToken } from "firebase/messaging";
+import { getMessaging, getToken, isSupported } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC6Na61pWwy1EthcAM2rDc_WtwaewFGLGQ",
@@ -12,10 +12,18 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const messaging = getMessaging(app);
-
 export const requestNotificationPermission = async () => {
   try {
+
+    // تأكد أن المتصفح يدعم Firebase Messaging
+    const supported = await isSupported();
+
+    if (!supported) {
+      console.log("Firebase messaging not supported in this browser");
+      return;
+    }
+
+    const messaging = getMessaging(app);
 
     const permission = await Notification.requestPermission();
 
@@ -36,6 +44,6 @@ export const requestNotificationPermission = async () => {
     }
 
   } catch (error) {
-    console.error("Error getting notification permission", error);
+    console.error("Error getting notification permission:", error);
   }
 };
