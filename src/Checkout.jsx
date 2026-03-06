@@ -11,6 +11,7 @@ import {
 import { db } from "./firebase";
 
 function Checkout() {
+
   const navigate = useNavigate();
   const { addOrder, clearCart, cart } = useContext(OrderContext);
 
@@ -27,16 +28,12 @@ function Checkout() {
   ];
 
   const [formData, setFormData] = useState({
-
-  fullName,
-  phone,
-  address,
-  governorate,
-
-  product,
-  selectedColor: product.selectedColor,
-
-});
+    fullName: "",
+    phone: "",
+    altPhone: "",
+    address: "",
+    governorate: ""
+  });
 
   const handleChange = (e) => {
     setFormData(prev => ({
@@ -46,6 +43,7 @@ function Checkout() {
   };
 
   /* 💰 حساب الأسعار */
+
   const subtotal = cart.reduce(
     (total, item) =>
       total + Number(item.price) * (item.quantity || 1),
@@ -56,7 +54,9 @@ function Checkout() {
   const finalTotal = subtotal - discountAmount;
 
   /* 🎟 Apply Coupon */
+
   const handleApplyCoupon = async () => {
+
     setCouponError("");
 
     if (!couponCode) return;
@@ -87,44 +87,63 @@ function Checkout() {
     }
 
     setDiscountPercent(couponData.discount);
+
   };
 
   /* 🧾 Submit Order */
+
   const handleSubmit = async (e) => {
+
     e.preventDefault();
+
     if (cart.length === 0) return;
 
     for (let item of cart) {
+
       await addOrder({
+
         fullName: formData.fullName,
         phone: formData.phone,
         altPhone: formData.altPhone,
         governorate: formData.governorate,
         address: formData.address,
+
         product: item,
+
+        // 🔥 اللون الذي اختاره العميل
+        selectedColor: item.selectedColor,
 
         couponCode: discountPercent > 0 ? couponCode : null,
         discountPercent,
         discountAmount,
         finalTotal,
+
       });
+
     }
 
-    /* تحديث الكوبون لو اتستخدم */
+    /* تحديث الكوبون */
+
     if (discountPercent > 0) {
+
       const couponRef = doc(db, "coupons", couponCode);
+
       await updateDoc(couponRef, {
         usedCount: increment(1),
         usedPhones: arrayUnion(formData.phone),
       });
+
     }
 
     clearCart();
+
     navigate("/success");
+
   };
 
   return (
     <div className="pt-32 pb-20 max-w-4xl mx-auto px-6">
+
       <h1 className="text-4xl font-bold mb-10 text-center">
         Checkout
       </h1>
@@ -134,10 +153,12 @@ function Checkout() {
           Your cart is empty.
         </p>
       ) : (
+
         <form
           onSubmit={handleSubmit}
           className="bg-white shadow-xl rounded-3xl p-10 flex flex-col gap-6"
         >
+
           <input
             type="text"
             name="fullName"
@@ -174,12 +195,15 @@ function Checkout() {
             required
             className="border p-4 rounded-lg bg-white"
           >
+
             <option value="">اختر المحافظة</option>
+
             {egyptGovernorates.map((gov, index) => (
               <option key={index} value={gov}>
                 {gov}
               </option>
             ))}
+
           </select>
 
           <textarea
@@ -192,8 +216,10 @@ function Checkout() {
             className="border p-4 rounded-lg"
           />
 
-          {/* 🎟 Coupon Section */}
+          {/* 🎟 Coupon */}
+
           <div className="flex gap-3">
+
             <input
               type="text"
               placeholder="كود الخصم"
@@ -211,6 +237,7 @@ function Checkout() {
             >
               تطبيق
             </button>
+
           </div>
 
           {couponError && (
@@ -220,6 +247,7 @@ function Checkout() {
           )}
 
           <div className="space-y-1 text-sm">
+
             <p>الإجمالي: {subtotal} EGP</p>
 
             {discountPercent > 0 && (
@@ -231,6 +259,7 @@ function Checkout() {
             <p className="font-bold text-lg">
               النهائي: {finalTotal} EGP
             </p>
+
           </div>
 
           <button
@@ -239,10 +268,13 @@ function Checkout() {
           >
             تأكيد الطلب
           </button>
+
         </form>
       )}
+
     </div>
   );
+
 }
 
 export default Checkout;

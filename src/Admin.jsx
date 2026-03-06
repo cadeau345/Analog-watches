@@ -217,10 +217,16 @@ function Admin() {
 
               <div className="flex items-center gap-6">
 
-                <img
-                  src={order.product?.mainImage || order.product?.image}
-                  className="w-20 h-20 object-cover rounded-lg"
-                />
+              <img
+  src={
+    order.product?.collections
+      ?.find(v => v.color === (order.selectedColor || order.product?.selectedColor))
+      ?.images?.[0]
+    || order.product?.mainImage
+    || order.product?.image
+  }
+  className="w-20 h-20 object-cover rounded-lg"
+/>
 
                 <div>
 
