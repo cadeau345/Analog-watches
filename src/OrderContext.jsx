@@ -83,15 +83,36 @@ const addRating = async (productId, rating) => {
 };
 
   /* 🔄 Load Orders */
-  const fetchOrders = async () => {
-    const snapshot = await getDocs(collection(db, "orders"));
+  const fetchProducts = async () => {
+
+  try {
+
+    // جلب من الكاش أولاً
+    const cachedProducts = localStorage.getItem("products");
+
+    if (cachedProducts) {
+      setProducts(JSON.parse(cachedProducts));
+    }
+
+    const snapshot = await getDocs(collection(db, "products"));
+
     const list = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
-    setOrders(list);
-  };
 
+    setProducts(list);
+
+    // حفظ في الكاش
+    localStorage.setItem("products", JSON.stringify(list));
+
+  } catch (error) {
+
+    console.error("Error fetching products:", error);
+
+  }
+
+};
   useEffect(() => {
     fetchProducts();
     fetchOrders();

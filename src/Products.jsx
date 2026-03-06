@@ -42,7 +42,18 @@ function Products({ customProducts, title }) {
       selectedColor: chosenColor,
     });
   };
-
+if (loading) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+      {Array(6).fill(0).map((_, i) => (
+        <div
+          key={i}
+          className="h-72 bg-gray-200 animate-pulse rounded-2xl"
+        />
+      ))}
+    </div>
+  );
+}
   return (
     <section className="bg-white py-20">
       <div className="max-w-7xl mx-auto px-6">
@@ -97,11 +108,11 @@ function Products({ customProducts, title }) {
   onClick={() => navigate(`/product/${product.id}`)}
   className="cursor-pointer overflow-hidden"
 >
-  <img
-    src={product.mainImage || product.image}
-    alt={product.name}
-    className="w-full h-64 object-contain mb-6 hover:scale-110 transition duration-500"
-  />
+<img
+  src={product.mainImage || product.image}
+  loading="lazy"
+  className="w-full h-64 object-contain mb-6 hover:scale-110 transition duration-500"
+/>
 </div>
 
              <h3
