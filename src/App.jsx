@@ -62,13 +62,7 @@ function App() {
           setOrdersCount(prev => prev + newOrders.length);
 
           // صوت
-          const audio = new Audio("/notification.mp3");
-          audio.volume = 1;
-          audio.play();
-
-          // إشعار
-          toast.success("🛒 New Order Received!");
-
+      
         }
 
       }
@@ -104,9 +98,7 @@ function App() {
                   <Products />
                 </div>
 
-                <div className="bg-red-500 text-white px-3 py-1 rounded-full">
-                  {ordersCount}
-                </div>
+                
 
                 <WhyChooseUs />
 
