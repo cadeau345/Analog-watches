@@ -194,7 +194,7 @@ function ProductDetails() {
             الأكثر مبيعًا 🔥
           </h2>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="flex overflow-x-auto gap-6 pb-4">
             {mostSellingProducts.map((item) => (
               <div
                 key={item.id}
@@ -230,12 +230,12 @@ function ProductDetails() {
             منتجات مشابهة
           </h2>
 
-          <div className="grid md:grid-cols-3 gap-8">
+         <div className="flex overflow-x-auto gap-6 pb-4">
             {similarProducts.map((item) => (
               <div
                 key={item.id}
                 onClick={() => navigate(`/product/${item.id}`)}
-                className="cursor-pointer bg-white shadow-md p-4 rounded-2xl hover:shadow-xl hover:-translate-y-2 transition"
+               className="min-w-[220px]cursor-pointer bg-white shadow-md p-4 rounded-2xl hover:shadow-xl hover:-translate-y-2 transition"
               >
                 <img
                   src={
