@@ -19,9 +19,46 @@ function ProductManager() {
   const [colorName, setColorName] = useState("");
   const [colorImages, setColorImages] = useState([]);
 
+  /* ================== IMAGE COMPRESSION ================== */
+
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+
+      reader.onload = (event) => {
+
+        const img = new Image();
+        img.src = event.target.result;
+
+        img.onload = () => {
+
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          const MAX_WIDTH = 600;
+          const scale = MAX_WIDTH / img.width;
+
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scale;
+
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          const compressed = canvas.toDataURL("image/jpeg", 0.6);
+
+          resolve(compressed);
+
+        };
+
+      };
+
+    });
+  };
+
   /* ================== MAIN IMAGE ================== */
 
-  const handleMainImage = (e) => {
+  const handleMainImage = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -30,11 +67,8 @@ function ProductManager() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setMainImage(reader.result);
-    };
-    reader.readAsDataURL(file);
+    const compressed = await compressImage(file);
+    setMainImage(compressed);
   };
 
   /* ================== COLOR IMAGES ================== */
@@ -43,16 +77,17 @@ function ProductManager() {
     const files = Array.from(e.target.files);
 
     const readers = files.map((file) => {
-      return new Promise((resolve) => {
+      return new Promise(async (resolve) => {
+
         if (file.size > 1_000_000) {
           alert("One of the images is too large (Max 1MB)");
           resolve(null);
           return;
         }
 
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(file);
+        const compressed = await compressImage(file);
+        resolve(compressed);
+
       });
     });
 
